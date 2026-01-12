@@ -1,8 +1,8 @@
 # VMStarter
 
-## Introduction
-
 ![](/logo_small.png)
+
+## Introduction
 
 Azure have built-in VM auto-shutdown feature, that stops a virtual machine at specified time and can optionally send a notification (email or webhook) before the shutdown happens.
 
@@ -32,6 +32,18 @@ If you only need to start VMs in specific resource groups, grant the roles at th
 - Docker or another OCI builder to produce the container image.
 
 ### Deployment script
+
+The following script provisions a minimal end-to-end setup:
+
+- Creates a resource group and a Container Apps Environment.
+- Creates a user-assigned managed identity and captures its principal ID.
+- Grants the identity the required permissions on the target subscription(s) so the job can enumerate VMs and start them.
+- Creates an Azure Container Apps **Job** triggered by a cron schedule and configured to run a single replica to completion.
+
+Notes:
+- Replace `TARGET_SUBSCRIPTION` (and/or repeat the role assignments) if you want the job to operate across multiple subscriptions.
+- Adjust `--cron-expression` to match your desired start time and timezone expectations.
+- Tune `--replica-timeout`, `--cpu`, and `--memory` based on the number of subscriptions/VMs you need to process.
 
 ```bash
 IMAGE_REG=docker.io
@@ -83,4 +95,17 @@ az containerapp job create \
 
 ### Result
 
+After running the script, you should have:
+
+- A Container Apps Environment and a scheduled Container Apps Job in the resource group.
+- A managed identity assigned with permissions to read VM inventory and start VMs in the selected subscription scope.
+- A job that executes on the configured cron schedule (example above: **07:00, Monday–Friday**) and runs the VMStarter container once per schedule tick.
+
+You can validate the setup by checking job executions and logs:
+
+- View job executions:
+  - Azure Portal → Container Apps → Jobs → (your job) → **Executions**
+  - or `az containerapp job execution list ...`
+
 ![](/result.png)
+
