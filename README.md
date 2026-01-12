@@ -12,9 +12,18 @@ There is no automatic start features for VMs in Azure. If you want the VM to com
 
 VMStarter is a Go-based worker whose only job is to iterate over every Azure subscription visible to its identity, enumerate all virtual machines, and send POST request for each VM to start it. On top of that you can use an Azure Container Apps (ACA) Job for VM start operations on demand or via schedule without wiring up custom automation per subscription.
 
-Code itself is available [here](/main.go). 
-
 ## How to run it?
+
+To run the app you can use:
+* The implementation in [main.go](/main.go).  
+* Container image in [Dockerfile](/Dockerfile).  
+* Built and ready-to-use [Docker Hub image](https://hub.docker.com/repository/docker/gr00vysky/vm-starter)
+
+## Running Container App Job
+
+This section explains how-to run VMStarter by using Azure Container Apps Job. Container App Job will use a managed identity and must have "Reader" and "Virtual Machine Contributor" (or custom role with `Microsoft.Compute/virtualMachines/start/action` permission) on required VM to start it. By default, in [the deployment script](#deployment-script), access will be granted to the whole default subscription.
+
+If you only need to start VMs in specific resource groups, grant the roles at the resource-group scope instead of whole subscriptions.
 
 ### Prerequisites
 
@@ -22,7 +31,7 @@ Code itself is available [here](/main.go).
 - Permission to create resource groups, Container Apps environments, and managed identities in the deployment subscription.
 - Docker or another OCI builder to produce the container image.
 
-### Deployment
+### Deployment script
 
 ```bash
 IMAGE_REG=docker.io
@@ -72,13 +81,6 @@ az containerapp job create \
   --cpu 0.25 --memory 0.5Gi
 ```
 
-## Required permissions for the app
+### Result
 
-The managed identity (or workload identity) that runs VMStarter must have:
-
-| Scope | Role | Why |
-|-------|------|-----|
-| Subscription (each target) | Reader | Allows the job to enumerate the subscription and list VMs via ARM. |
-| Subscription (each target) | Virtual Machine Contributor *or* the `Microsoft.Compute/virtualMachines/start/action` custom role | Grants rights to invoke the VM `start` action. |
-
-Remember to scope assignments narrowly. If you only need to start VMs in specific resource groups, grant the roles at the resource-group scope instead of whole subscriptions.
+![](/result.png)
