@@ -12,6 +12,8 @@ There is no automatic start features for VMs in Azure. If you want the VM to com
 
 VMStarter is a Go-based worker whose only job is to iterate over every Azure subscription visible to its identity, enumerate all virtual machines, and send POST request for each VM to start it. On top of that you can use an Azure Container Apps (ACA) Job for VM start operations on demand or via schedule without wiring up custom automation per subscription.
 
+Code itself is available [here](/main.go). 
+
 ## How to run it?
 
 ### Prerequisites
@@ -80,14 +82,3 @@ The managed identity (or workload identity) that runs VMStarter must have:
 | Subscription (each target) | Virtual Machine Contributor *or* the `Microsoft.Compute/virtualMachines/start/action` custom role | Grants rights to invoke the VM `start` action. |
 
 Remember to scope assignments narrowly. If you only need to start VMs in specific resource groups, grant the roles at the resource-group scope instead of whole subscriptions.
-
-## How the code works (`main.go`)
-
-| Area | Purpose |
-|------|---------|
-| `getAzureAccessToken` | Requests an ARM bearer token via `azidentity.NewDefaultAzureCredential`, enabling managed identity, workload identity, or developer logins without code changes. |
-| `sendRequest` | Issues HTTP calls with the bearer token, JSON headers, and a 30-second timeout. |
-| `parseResourceGroup` | Splits the VM resource ID to locate the resource group name required for the `start` call. |
-| `main` | Fetches subscriptions, enumerates VMs, stamps the resource group, sends `POST .../start`, and logs `[INF]`/`[ERR]` events for each outcome. |
-
-The code talks directly to `https://management.azure.com` using API versions `2022-12-01` (subscriptions) and `2025-04-01` (VMs), so no SDK-generated clients are required.
